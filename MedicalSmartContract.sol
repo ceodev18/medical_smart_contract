@@ -14,7 +14,7 @@ contract MedicalSmartContract{
         string name;
         string ruc;
         uint index;
-        string[] patientList;
+        address[] patientList;
         mapping(string => address)  patientListAddress;
     }
     
@@ -33,6 +33,12 @@ contract MedicalSmartContract{
     event LogDeleteUser(address indexed userAddress,uint rowToDelete);
     event LogUpdateUser(address indexed keyToMove, uint rowToDelete,string name, string dni);
     
+    //Medical Center Events
+    event LogPatientAdded(address indexed medicalCenter, string dni_added,string name);
+    event LogListOfPatients(address indexed patient, string dni,string name);
+    
+    //utils Events
+    event LogUtilEvent(bool status);
     
     function insertPatient(address userAddress, string memory name, string memory dni, string  memory email) 
     public
@@ -80,7 +86,7 @@ contract MedicalSmartContract{
   returns(bool success) 
   {     
     //PatientList[userAddress].userEmail
-    
+    emit LogUtilEvent(true);
       return true;
    }
   
@@ -125,7 +131,7 @@ contract MedicalSmartContract{
     uint index = 0;
     for (uint i = 0; i<MedicalCenterList[medical_address].patientList.length-1; i++){
         
-        if (keccak256(abi.encodePacked(MedicalCenterList[medical_address].patientList[i])) == keccak256(abi.encodePacked(PatientList[patient_address].dni))){
+        if (patient_address == MedicalCenterList[medical_address].patientList[i]){
             index=i; 
             break;    
         }
@@ -134,16 +140,33 @@ contract MedicalSmartContract{
     
     if (index >= MedicalCenterList[medical_address].patientList.length) return false;
     
-    string[] memory patientList;
+    
     for (uint i = index; i<MedicalCenterList[medical_address].patientList.length-1; i++){
         MedicalCenterList[medical_address].patientList[i] = MedicalCenterList[medical_address].patientList[i+1];
         
     }
     MedicalCenterList[medical_address].patientList.pop();
     
-    //LogDeleteUser(userAddress,rowToDelete);
-    //LogUpdateUser(keyToMove, rowToDelete, PatientList[keyToMove].name,PatientList[keyToMove].dni);
+    for (uint i=0; i<MedicalCenterList[medical_address].patientList.length; i++) {
+        address a_inx = MedicalCenterList[medical_address].patientList[i];
+        emit LogListOfPatients(a_inx,PatientList[a_inx].dni,PatientList[a_inx].name);
+    }
+    return true;
     
+  }
+  
+  function authorizedAccesToMedicalCenter(address medical_address,address patient_address) public
+    returns(bool status)
+  {
+    
+    MedicalCenterList[medical_address].patientList.push(patient_address);
+    
+    for (uint i=0; i<MedicalCenterList[medical_address].patientList.length; i++) {
+        address a_inx = MedicalCenterList[medical_address].patientList[i];
+        emit LogListOfPatients(a_inx,PatientList[a_inx].dni,PatientList[a_inx].name);
+    }
+    return true;
+    //loop content of user 
   }
   
 }
