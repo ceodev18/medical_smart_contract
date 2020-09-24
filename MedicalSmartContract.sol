@@ -14,7 +14,8 @@ contract MedicalSmartContract{
         string name;
         string ruc;
         uint index;
-        address[] patientList;
+        string[] patientList;
+        mapping(string => address)  patientListAddress;
     }
     
     mapping(address => Patient) private PatientList;
@@ -29,7 +30,10 @@ contract MedicalSmartContract{
     event LogNewMedicalCenter (address indexed userAddress, uint index, string name,  string ruc);
     event LogMedicalTransactionToPatient (address indexed userAddress, string name, string ruc);
     event LogMedicalInformationPatient (string url_content);
-  
+    event LogDeleteUser(address indexed userAddress,uint rowToDelete);
+    event LogUpdateUser(address indexed keyToMove, uint rowToDelete,string name, string dni);
+    
+    
     function insertPatient(address userAddress, string memory name, string memory dni, string  memory email) 
     public
     returns(uint index)
@@ -93,6 +97,53 @@ contract MedicalSmartContract{
         }
      
       return true;
+  }
+ 
+ function removePatient(address userAddress) 
+    public
+    returns(uint index)
+  {
+      
+
+    uint rowToDelete = PatientList[userAddress].index;
+    address keyToMove = PatientIndexList[PatientIndexList.length-1];
+    PatientIndexList[rowToDelete] = keyToMove;
+    PatientList[keyToMove].index = rowToDelete; 
+    PatientIndexList.pop();
+    
+    LogDeleteUser(userAddress,rowToDelete);
+    LogUpdateUser(keyToMove, rowToDelete, PatientList[keyToMove].name,PatientList[keyToMove].dni);
+    return rowToDelete;
+  } 
+  
+  function deniedAccessToMedicalCenter(address medical_address,address patient_address) 
+    public
+    returns(bool status)
+  {
+      
+
+    uint index = 0;
+    for (uint i = 0; i<MedicalCenterList[medical_address].patientList.length-1; i++){
+        
+        if (keccak256(abi.encodePacked(MedicalCenterList[medical_address].patientList[i])) == keccak256(abi.encodePacked(PatientList[patient_address].dni))){
+            index=i; 
+            break;    
+        }
+    }
+        
+    
+    if (index >= MedicalCenterList[medical_address].patientList.length) return false;
+    
+    string[] memory patientList;
+    for (uint i = index; i<MedicalCenterList[medical_address].patientList.length-1; i++){
+        MedicalCenterList[medical_address].patientList[i] = MedicalCenterList[medical_address].patientList[i+1];
+        
+    }
+    MedicalCenterList[medical_address].patientList.pop();
+    
+    //LogDeleteUser(userAddress,rowToDelete);
+    //LogUpdateUser(keyToMove, rowToDelete, PatientList[keyToMove].name,PatientList[keyToMove].dni);
+    
   }
   
 }
